@@ -16,6 +16,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib)
 
+# nlohmann/json
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+    GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(json)
+
 # Google Test
 FetchContent_Declare(
     googletest
@@ -30,8 +39,10 @@ FetchContent_MakeAvailable(googletest)
 # ── Core library (pure logic, no graphics) ─────────────────────────
 add_library(globe_core STATIC
     src/arcball_camera.cpp
+    src/geojson_parser.cpp
 )
 target_include_directories(globe_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(globe_core PUBLIC nlohmann_json::nlohmann_json)
 
 # ── Main executable ────────────────────────────────────────────────
 add_executable(3D-Earth
@@ -44,6 +55,7 @@ enable_testing()
 
 add_executable(globe_tests
     tests/test_arcball_camera.cpp
+    tests/test_geojson_parser.cpp
 )
 target_link_libraries(globe_tests PRIVATE globe_core GTest::gtest_main)
 

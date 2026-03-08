@@ -97,6 +97,26 @@ bool compute_rotation(Vec3 from, Vec3 to, Vec3& axis, float& angle) {
     return angle > 1e-8f;
 }
 
+// ── Lat/Lon to Cartesian ──────────────────────────────────────────
+
+Vec3 latlon_to_cartesian(float lat_deg, float lon_deg, float radius) {
+    constexpr float DEG2RAD = 3.14159265358979323846f / 180.0f;
+
+    float lat_rad = lat_deg * DEG2RAD;
+    float lon_rad = lon_deg * DEG2RAD;
+
+    float cos_lat = std::cos(lat_rad);
+    float sin_lat = std::sin(lat_rad);
+    float cos_lon = std::cos(lon_rad);
+    float sin_lon = std::sin(lon_rad);
+
+    return {
+        radius * cos_lat * sin_lon,  // x = R·cos(φ)·sin(θ)
+        radius * sin_lat,            // y = R·sin(φ)
+        radius * cos_lat * cos_lon   // z = R·cos(φ)·cos(θ)
+    };
+}
+
 // ── ArcballCamera ─────────────────────────────────────────────────
 
 /// θ ← θ − Δx · S  (negated so sphere follows drag direction)
