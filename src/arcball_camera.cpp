@@ -99,8 +99,8 @@ bool compute_rotation(Vec3 from, Vec3 to, Vec3& axis, float& angle) {
 
 // ── ArcballCamera ─────────────────────────────────────────────────
 
-/// θ ← θ + Δx · S
-/// φ ← φ + Δy · S  (negative because screen-Y is inverted)
+/// θ ← θ − Δx · S  (negated so sphere follows drag direction)
+/// φ ← φ + Δy · S  (negated so sphere follows drag direction)
 /// Clamp: −π/2 < φ < π/2
 void ArcballCamera::rotate(float dx, float dy, float sensitivity) {
     constexpr float PI_HALF  = 3.14159265358979323846f / 2.0f;
@@ -113,11 +113,12 @@ void ArcballCamera::rotate(float dx, float dy, float sensitivity) {
         return;
     }
 
-    // θ ← θ + Δx · S
-    longitude += dx * sensitivity;
+    // θ ← θ − Δx · S  (negate so sphere surface follows drag direction)
+    longitude -= dx * sensitivity;
 
-    // φ ← φ − Δy · S  (screen Y is inverted: drag down = positive dy = decrease latitude)
-    latitude -= dy * sensitivity;
+    // φ ← φ + Δy · S  (negate so sphere surface follows drag direction;
+    //                    screen Y is inverted: drag down = positive dy)
+    latitude += dy * sensitivity;
 
     // Gimbal-lock prevention: −π/2 < φ < π/2
     latitude = std::clamp(latitude, -PI_LIMIT, PI_LIMIT);

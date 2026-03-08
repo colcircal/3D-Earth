@@ -231,28 +231,28 @@ TEST(ComputeRotation, LargerDragProducesLargerAngle) {
 // Happy Path — ArcballCamera spherical coordinate rotation
 // ═══════════════════════════════════════════════════════════════════
 
-TEST(ArcballCamera_Rotate, DragRightIncreasesLongitude) {
+TEST(ArcballCamera_Rotate, DragRightDecreasesLongitude) {
     // Arrange
     ArcballCamera cam;
     float initial_lon = cam.longitude;
 
-    // Act — positive dx = drag right
+    // Act — positive dx = drag right → camera moves left → sphere follows drag
     cam.rotate(100.0f, 0.0f);
 
-    // Assert
-    EXPECT_GT(cam.longitude, initial_lon);
+    // Assert — longitude decreases so sphere surface moves right
+    EXPECT_LT(cam.longitude, initial_lon);
 }
 
-TEST(ArcballCamera_Rotate, DragDownDecreasesLatitude) {
+TEST(ArcballCamera_Rotate, DragDownIncreasesLatitude) {
     // Arrange
     ArcballCamera cam;
     float initial_lat = cam.latitude;
 
-    // Act — positive dy = drag down
+    // Act — positive dy = drag down → camera moves up → sphere follows drag
     cam.rotate(0.0f, 100.0f);
 
-    // Assert
-    EXPECT_LT(cam.latitude, initial_lat);
+    // Assert — latitude increases so sphere surface moves down
+    EXPECT_GT(cam.latitude, initial_lat);
 }
 
 TEST(ArcballCamera_Rotate, SensitivityScalesRotation) {
