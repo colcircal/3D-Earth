@@ -1,0 +1,5 @@
+build/
+__cmake_systeminformation/
+.claude/
+*.user
+.vs/
