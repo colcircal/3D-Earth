@@ -1,13 +1,41 @@
 #include "arcball_camera.h"
+#include "geojson_parser.h"
 #include "raylib.h"
+
+#include <vector>
 
 int main() {
     constexpr int SCREEN_W = 800;
     constexpr int SCREEN_H = 600;
     constexpr float SPHERE_RADIUS = 1.5f;
 
-    InitWindow(SCREEN_W, SCREEN_H, "3D Earth — Arcball Camera");
+    InitWindow(SCREEN_W, SCREEN_H, "3D Earth — World Map");
     SetTargetFPS(60);
+
+    // ── Load GeoJSON ─────────────────────────────────────
+    globe::ParseResult geo = globe::parse_geojson_file("world.json", SPHERE_RADIUS + 0.003f);
+    if (!geo.success) {
+        TraceLog(LOG_WARNING, "GeoJSON load failed: %s", geo.error_message.c_str());
+    }
+
+    // Pre-convert to Raylib Vector3 for fast rendering
+    struct RingData {
+        std::vector<Vector3> points;
+    };
+    std::vector<std::vector<RingData>> all_countries;
+
+    for (const auto& country : geo.countries) {
+        std::vector<RingData> country_rings;
+        for (const auto& ring : country.rings) {
+            RingData rd;
+            rd.points.reserve(ring.size());
+            for (const auto& pt : ring) {
+                rd.points.push_back({pt.x, pt.y, pt.z});
+            }
+            country_rings.push_back(std::move(rd));
+        }
+        all_countries.push_back(std::move(country_rings));
+    }
 
     globe::ArcballCamera arcball;
     arcball.distance = 5.0f;
@@ -49,12 +77,23 @@ int main() {
 
             BeginMode3D(camera);
                 // Solid sphere
-                DrawSphere({0, 0, 0}, SPHERE_RADIUS, {40, 80, 160, 255});
-                // Wireframe overlay
-                DrawSphereWires({0, 0, 0}, SPHERE_RADIUS + 0.002f,
-                                16, 16, {100, 160, 255, 120});
+                DrawSphere({0, 0, 0}, SPHERE_RADIUS, {30, 60, 120, 255});
+
+                // Country borders as line strips
+                for (const auto& country_rings : all_countries) {
+                    for (const auto& rd : country_rings) {
+                        for (size_t i = 0; i + 1 < rd.points.size(); ++i) {
+                            DrawLine3D(rd.points[i], rd.points[i + 1],
+                                       {200, 220, 255, 200});
+                        }
+                    }
+                }
             EndMode3D();
 
+            if (!geo.success) {
+                DrawText("world.json not found — place it next to the exe",
+                         10, SCREEN_H - 30, 16, RED);
+            }
             DrawText("Drag to rotate", 10, 10, 20, LIGHTGRAY);
             DrawFPS(SCREEN_W - 90, 10);
         EndDrawing();

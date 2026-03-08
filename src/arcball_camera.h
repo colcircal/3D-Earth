@@ -39,6 +39,15 @@ Vec3 map_to_sphere(float screen_x, float screen_y,
 ///         (e.g. identical points, degenerate input).
 bool compute_rotation(Vec3 from, Vec3 to, Vec3& axis, float& angle);
 
+/// Convert latitude/longitude (degrees) to 3D Cartesian coordinates.
+///   x = R · cos(φ) · sin(θ)
+///   y = R · sin(φ)
+///   z = R · cos(φ) · cos(θ)
+/// @param lat_deg  Latitude in degrees  (-90 to 90).
+/// @param lon_deg  Longitude in degrees (-180 to 180).
+/// @param radius   Sphere radius.
+Vec3 latlon_to_cartesian(float lat_deg, float lon_deg, float radius);
+
 /// Spherical-coordinate camera state.
 struct ArcballCamera {
     float latitude  = 0.0f;   // radians, clamped to (-pi/2, pi/2)
