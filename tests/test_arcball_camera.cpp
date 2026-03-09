@@ -645,3 +645,121 @@ TEST(ArcballCamera_Zoom, DistanceNeverNegative) {
     EXPECT_GT(cam.distance, 0.0f);
     EXPECT_FALSE(std::isnan(cam.distance));
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Happy Path — Dynamic sensitivity (S_mult = min(1.0, R / R_default))
+// ═══════════════════════════════════════════════════════════════════
+
+TEST(DynamicSensitivity, ZoomedIn75PercentReducesSensitivity) {
+    // Arrange — R = 0.75 × R_default → S_mult = 0.75
+    ArcballCamera cam;
+    cam.initial_distance = 4.0f;
+    cam.distance = 3.0f;  // 0.75 × 4.0
+
+    ArcballCamera ref;
+    ref.initial_distance = 4.0f;
+    ref.distance = 4.0f;  // 1.0 × R_default → S_mult = 1.0
+
+    // Act — same drag input
+    cam.rotate(100.0f, 0.0f);
+    ref.rotate(100.0f, 0.0f);
+
+    // Assert — zoomed-in camera rotates less (75% of reference)
+    float cam_delta = std::abs(cam.longitude);
+    float ref_delta = std::abs(ref.longitude);
+    EXPECT_GT(ref_delta, cam_delta);
+    EXPECT_NEAR(cam_delta / ref_delta, 0.75f, 0.01f);
+}
+
+TEST(DynamicSensitivity, MaxZoomInHalvesSensitivity) {
+    // Arrange — R = 0.5 × R_default → S_mult = 0.5
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    cam.distance = 2.5f;  // 0.5 × 5.0
+
+    ArcballCamera ref;
+    ref.initial_distance = 5.0f;
+    ref.distance = 5.0f;
+
+    // Act
+    cam.rotate(100.0f, 0.0f);
+    ref.rotate(100.0f, 0.0f);
+
+    // Assert — half sensitivity
+    float cam_delta = std::abs(cam.longitude);
+    float ref_delta = std::abs(ref.longitude);
+    EXPECT_NEAR(cam_delta / ref_delta, 0.5f, 0.01f);
+}
+
+TEST(DynamicSensitivity, ZoomedOutCapsAtOne) {
+    // Arrange — R = 1.5 × R_default → S_mult = min(1.0, 1.5) = 1.0
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    cam.distance = 7.5f;  // 1.5 × 5.0
+
+    ArcballCamera ref;
+    ref.initial_distance = 5.0f;
+    ref.distance = 5.0f;
+
+    // Act
+    cam.rotate(100.0f, 0.0f);
+    ref.rotate(100.0f, 0.0f);
+
+    // Assert — sensitivity capped at 1.0 (same as default)
+    float cam_delta = std::abs(cam.longitude);
+    float ref_delta = std::abs(ref.longitude);
+    EXPECT_NEAR(cam_delta / ref_delta, 1.0f, 0.01f);
+}
+
+TEST(DynamicSensitivity, ZoomedOut2xCapsAtOne) {
+    // Arrange — R = 2.0 × R_default → S_mult = min(1.0, 2.0) = 1.0
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    cam.distance = 10.0f;
+
+    ArcballCamera ref;
+    ref.initial_distance = 5.0f;
+    ref.distance = 5.0f;
+
+    // Act
+    cam.rotate(0.0f, 100.0f);
+    ref.rotate(0.0f, 100.0f);
+
+    // Assert — sensitivity capped at 1.0
+    float cam_delta = std::abs(cam.latitude);
+    float ref_delta = std::abs(ref.latitude);
+    EXPECT_NEAR(cam_delta / ref_delta, 1.0f, 0.01f);
+}
+
+TEST(DynamicSensitivity, DefaultDistanceGivesFullSensitivity) {
+    // Arrange — R = R_default → S_mult = 1.0
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    cam.distance = 5.0f;
+
+    // Act
+    cam.rotate(200.0f, 0.0f, 0.005f);
+
+    // Assert — full sensitivity: Δlon = 200 × 0.005 × 1.0 = 1.0
+    EXPECT_NEAR(std::abs(cam.longitude), 1.0f, 0.01f);
+}
+
+TEST(DynamicSensitivity, AppliesToLatitudeAsWell) {
+    // Arrange — R = 0.5 × R_default → S_mult = 0.5
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    cam.distance = 2.5f;
+
+    ArcballCamera ref;
+    ref.initial_distance = 5.0f;
+    ref.distance = 5.0f;
+
+    // Act — vertical drag
+    cam.rotate(0.0f, 100.0f);
+    ref.rotate(0.0f, 100.0f);
+
+    // Assert — latitude change is also halved
+    float cam_delta = std::abs(cam.latitude);
+    float ref_delta = std::abs(ref.latitude);
+    EXPECT_NEAR(cam_delta / ref_delta, 0.5f, 0.01f);
+}
