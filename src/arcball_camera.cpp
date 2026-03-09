@@ -133,12 +133,17 @@ void ArcballCamera::rotate(float dx, float dy, float sensitivity) {
         return;
     }
 
-    // θ ← θ − Δx · S  (negate so sphere surface follows drag direction)
-    longitude -= dx * sensitivity;
+    // Dynamic sensitivity: S_mult = min(1.0, R / R_default)
+    float s_mult = (initial_distance > 1e-8f)
+                       ? std::min(1.0f, distance / initial_distance)
+                       : 1.0f;
+    float effective_sens = sensitivity * s_mult;
 
-    // φ ← φ + Δy · S  (negate so sphere surface follows drag direction;
-    //                    screen Y is inverted: drag down = positive dy)
-    latitude += dy * sensitivity;
+    // θ ← θ − Δx · S · S_mult
+    longitude -= dx * effective_sens;
+
+    // φ ← φ + Δy · S · S_mult
+    latitude += dy * effective_sens;
 
     // Gimbal-lock prevention: −π/2 < φ < π/2
     latitude = std::clamp(latitude, -PI_LIMIT, PI_LIMIT);
