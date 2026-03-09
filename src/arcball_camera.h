@@ -53,11 +53,17 @@ struct ArcballCamera {
     float latitude  = 0.0f;   // radians, clamped to (-pi/2, pi/2)
     float longitude = 0.0f;   // radians
     float distance  = 5.0f;   // distance from origin
+    float initial_distance = 5.0f;  // zoom range reference (0.5x ~ 2.0x)
 
     /// Update camera angles from mouse delta (pixels).
     /// @param dx, dy  Mouse movement delta in pixels.
     /// @param sensitivity  Radians per pixel.
     void rotate(float dx, float dy, float sensitivity = 0.005f);
+
+    /// Apply zoom from mouse wheel delta.
+    /// @param delta  Positive = zoom in (closer), negative = zoom out (farther).
+    /// @param sensitivity  Distance change per wheel tick.
+    void zoom(float delta, float sensitivity = 0.1f);
 
     /// Get the Cartesian eye position from spherical coordinates.
     Vec3 get_eye_position() const;
