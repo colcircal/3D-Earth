@@ -147,6 +147,24 @@ void ArcballCamera::rotate(float dx, float dy, float sensitivity) {
     longitude = std::fmod(longitude, TWO_PI);
 }
 
+// ── Zoom ─────────────────────────────────────────────────────────
+
+void ArcballCamera::zoom(float delta, float sensitivity) {
+    // Guard: reject NaN / Inf
+    if (std::isnan(delta) || std::isnan(sensitivity) ||
+        std::isinf(delta) || std::isinf(sensitivity)) {
+        return;
+    }
+
+    // Positive delta = zoom in = decrease distance
+    distance -= delta * sensitivity;
+
+    // Clamp to [0.5 × initial, 2.0 × initial]
+    float min_dist = initial_distance * 0.5f;
+    float max_dist = initial_distance * 2.0f;
+    distance = std::clamp(distance, min_dist, max_dist);
+}
+
 /// Spherical → Cartesian (θ measured from +Z axis):
 ///   x = R · cos(φ) · sin(θ)
 ///   y = R · sin(φ)

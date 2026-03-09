@@ -507,3 +507,141 @@ TEST(ArcballCamera_Error, ZeroSensitivityProducesNoRotation) {
     EXPECT_NEAR(cam.latitude, original_lat, EPSILON);
     EXPECT_NEAR(cam.longitude, original_lon, EPSILON);
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Happy Path — Camera zoom
+// ═══════════════════════════════════════════════════════════════════
+
+TEST(ArcballCamera_Zoom, ZoomInDecreasesDistance) {
+    // Arrange
+    ArcballCamera cam;
+    float original_dist = cam.distance;
+
+    // Act — positive delta = zoom in = closer
+    cam.zoom(1.0f);
+
+    // Assert
+    EXPECT_LT(cam.distance, original_dist);
+}
+
+TEST(ArcballCamera_Zoom, ZoomOutIncreasesDistance) {
+    // Arrange
+    ArcballCamera cam;
+    float original_dist = cam.distance;
+
+    // Act — negative delta = zoom out = farther
+    cam.zoom(-1.0f);
+
+    // Assert
+    EXPECT_GT(cam.distance, original_dist);
+}
+
+TEST(ArcballCamera_Zoom, ZoomSensitivityScales) {
+    // Arrange
+    ArcballCamera cam1, cam2;
+
+    // Act
+    cam1.zoom(1.0f, 0.05f);   // low sensitivity
+    cam2.zoom(1.0f, 0.5f);    // high sensitivity
+
+    // Assert — higher sensitivity → larger distance change
+    float delta1 = std::abs(cam1.distance - 5.0f);
+    float delta2 = std::abs(cam2.distance - 5.0f);
+    EXPECT_GT(delta2, delta1);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Edge Case — Zoom clamping
+// ═══════════════════════════════════════════════════════════════════
+
+TEST(ArcballCamera_Zoom, ZoomClampAtMinimum) {
+    // Arrange
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    float min_dist = cam.initial_distance * 0.5f;  // 2.5
+
+    // Act — extreme zoom in
+    cam.zoom(10000.0f);
+
+    // Assert — distance should not go below 0.5 × initial
+    EXPECT_GE(cam.distance, min_dist - EPSILON);
+}
+
+TEST(ArcballCamera_Zoom, ZoomClampAtMaximum) {
+    // Arrange
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    float max_dist = cam.initial_distance * 2.0f;  // 10.0
+
+    // Act — extreme zoom out
+    cam.zoom(-10000.0f);
+
+    // Assert — distance should not exceed 2.0 × initial
+    EXPECT_LE(cam.distance, max_dist + EPSILON);
+}
+
+TEST(ArcballCamera_Zoom, ZoomAfterMultipleSteps) {
+    // Arrange
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+    float min_dist = cam.initial_distance * 0.5f;
+    float max_dist = cam.initial_distance * 2.0f;
+
+    // Act — many zoom in/out cycles
+    for (int i = 0; i < 500; ++i) {
+        cam.zoom(1.0f);
+    }
+    for (int i = 0; i < 1000; ++i) {
+        cam.zoom(-1.0f);
+    }
+
+    // Assert — always within range
+    EXPECT_GE(cam.distance, min_dist - EPSILON);
+    EXPECT_LE(cam.distance, max_dist + EPSILON);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Error Case — Zoom with invalid input
+// ═══════════════════════════════════════════════════════════════════
+
+TEST(ArcballCamera_Zoom, NaNDeltaPreservesState) {
+    // Arrange
+    ArcballCamera cam;
+    float original_dist = cam.distance;
+    float nan_val = std::numeric_limits<float>::quiet_NaN();
+
+    // Act
+    cam.zoom(nan_val);
+
+    // Assert — distance unchanged, no NaN
+    EXPECT_FALSE(std::isnan(cam.distance));
+    EXPECT_NEAR(cam.distance, original_dist, EPSILON);
+}
+
+TEST(ArcballCamera_Zoom, InfDeltaPreservesState) {
+    // Arrange
+    ArcballCamera cam;
+    float original_dist = cam.distance;
+    float inf_val = std::numeric_limits<float>::infinity();
+
+    // Act
+    cam.zoom(inf_val);
+
+    // Assert
+    EXPECT_FALSE(std::isinf(cam.distance));
+    EXPECT_FALSE(std::isnan(cam.distance));
+    EXPECT_NEAR(cam.distance, original_dist, EPSILON);
+}
+
+TEST(ArcballCamera_Zoom, DistanceNeverNegative) {
+    // Arrange
+    ArcballCamera cam;
+    cam.initial_distance = 5.0f;
+
+    // Act — extreme zoom in with high sensitivity
+    cam.zoom(1000.0f, 100.0f);
+
+    // Assert — distance must always be positive
+    EXPECT_GT(cam.distance, 0.0f);
+    EXPECT_FALSE(std::isnan(cam.distance));
+}

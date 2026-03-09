@@ -39,6 +39,7 @@ int main() {
 
     globe::ArcballCamera arcball;
     arcball.distance = 5.0f;
+    arcball.initial_distance = 5.0f;
 
     Vector2 prev_mouse = {0};
     bool dragging = false;
@@ -60,6 +61,12 @@ int main() {
             float dy = mouse.y - prev_mouse.y;
             arcball.rotate(dx, dy);
             prev_mouse = mouse;
+        }
+
+        // ── Input: mouse wheel zoom ─────────────────────
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0.0f) {
+            arcball.zoom(wheel);
         }
 
         // ── Camera position from spherical coordinates ───
@@ -94,7 +101,7 @@ int main() {
                 DrawText("world.json not found — place it next to the exe",
                          10, SCREEN_H - 30, 16, RED);
             }
-            DrawText("Drag to rotate", 10, 10, 20, LIGHTGRAY);
+            DrawText("Drag to rotate | Scroll to zoom", 10, 10, 20, LIGHTGRAY);
             DrawFPS(SCREEN_W - 90, 10);
         EndDrawing();
     }
